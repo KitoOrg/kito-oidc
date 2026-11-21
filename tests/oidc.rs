@@ -718,8 +718,8 @@ fn a_kito_server_signs_people_in_with_it() {
         "bob",
         "--identity",
         "oidc:Bob@Example.com",
-        "--role",
-        "write",
+        "--repo",
+        "shop:write",
     ]);
     assert!(
         added.contains("whoever signs in as oidc:bob@example.com is bob. No token."),
