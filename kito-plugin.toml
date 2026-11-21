@@ -1,0 +1,16 @@
+name = "oidc"
+version = "0.1.0"
+description = "Sign in to a Kito server with OpenID Connect (Google, Okta, Entra, Keycloak…)"
+api = 1
+# It says who somebody is (`sign_in`), and adds `kito-server oidc`, with
+# which an administrator says which provider and which client are the
+# server's (`server_admin`). It is given nothing of any repository.
+permissions = ["sign_in", "server_admin"]
+
+[sign_in]
+method = "oidc"
+about = "Sign in with your organization's account"
+
+[[server_command]]
+name = "oidc"
+about = "Set up signing in with OpenID Connect: setup <issuer> <client id> | status"
