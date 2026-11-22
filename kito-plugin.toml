@@ -1,5 +1,5 @@
 name = "oidc"
-version = "0.1.0"
+version = "0.1.1"
 description = "Sign in to a Kito server with OpenID Connect (Google, Okta, Entra, Keycloak…)"
 api = 1
 # It says who somebody is (`sign_in`), and adds `kito-server oidc`, with

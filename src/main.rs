@@ -12,6 +12,9 @@
 //!   page, which sends the browser back with a code (with PKCE).
 //! - `kito-oidc sign-in finish`: who that was, `{"wait": seconds}`
 //!   while they have not done it, or `{"refused": why}`.
+//! - `kito-oidc sign-in ready`: whether it is set up (`{"ready": true}`,
+//!   or `false` with `why`): the server asks before it offers it (Kito
+//!   0.39.1).
 //! - `kito-oidc sign-in lookup <who>`: the identity the server keeps for
 //!   `kito-server user add --identity oidc:<who>`.
 //!
@@ -123,9 +126,11 @@ impl Config {
     /// `Err` while the plugin is not set up, in words for whoever reads it.
     fn ready(&self) -> Result<(), String> {
         if self.issuer().is_empty() || self.client_id.trim().is_empty() {
-            return Err("signing in with OpenID Connect is not set up on this server: an administrator runs \
+            return Err(
+                "signing in with OpenID Connect is not set up on this server: an admin runs \
                         `kito-server oidc setup <issuer> <client id>`"
-                .to_owned());
+                    .to_owned(),
+            );
         }
         match safe(self.issuer()) {
             true => Ok(()),
@@ -355,7 +360,7 @@ fn no_token(answer: &Value) -> Value {
         "expired_token" => refused("the code ran out before it was entered: start again"),
         "invalid_grant" => refused("the provider no longer takes that code: start again"),
         "invalid_client" | "unauthorized_client" => refused(
-            "the provider does not take this server as the client that was set up: an administrator checks the \
+            "the provider does not take this server as the client that was set up: an admin checks the \
              client id, its secret, and what the client may do there",
         ),
         "" => refused("the provider gave no answer that says who signed in"),
@@ -384,7 +389,7 @@ fn whose(
         .filter(Value::is_object)
     else {
         return Ok(refused(
-            "the provider gave no ID token: an administrator checks that the client may ask for `openid`",
+            "the provider gave no ID token: an admin checks that the client may ask for `openid`",
         ));
     };
     let client_id = config.client_id.trim();
@@ -443,7 +448,7 @@ fn whose(
     let subject = if config.by_email() {
         let Some(email) = email.clone() else {
             return Ok(refused(
-                "the provider did not say your email: an administrator checks that the client may ask for `email`",
+                "the provider did not say your email: an admin checks that the client may ask for `email`",
             ));
         };
         let verified = claims["email_verified"] == true || claims["email_verified"] == "true";
@@ -728,8 +733,13 @@ fn main() -> ExitCode {
             let answer = Config::load().and_then(|config| match (*step, rest) {
                 ("begin", _) => begin(&config, &told),
                 ("finish", _) => finish(&config, &told),
+                // Whether it can be used, as the server asks before it offers it (Kito 0.39.1).
+                ("ready", _) => Ok(match config.ready() {
+                    Ok(()) => json!({ "ready": true }),
+                    Err(why) => json!({ "ready": false, "why": why }),
+                }),
                 ("lookup", [who, ..]) => lookup(&config, who),
-                _ => Err("it is `sign-in begin | finish | lookup <who>`".to_owned()),
+                _ => Err("it is `sign-in begin | finish | ready | lookup <who>`".to_owned()),
             });
             answer.map(|answer| println!("{answer}"))
         }

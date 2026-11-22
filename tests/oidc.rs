@@ -271,7 +271,21 @@ fn a_code_entered_at_the_provider_says_who_signs_in_from_a_command_line() {
         "{why}"
     );
 
+    // The server asks before it offers it: not yet, then it can.
+    let asked = answer(tmp.path(), &["sign-in", "ready"], &device);
+    assert_eq!(asked["ready"], false, "{asked}");
+    assert!(
+        asked["why"]
+            .as_str()
+            .is_some_and(|why| why.contains("kito-server oidc setup")),
+        "{asked}"
+    );
+
     set_up(tmp.path(), &provider, "");
+    assert_eq!(
+        answer(tmp.path(), &["sign-in", "ready"], &device),
+        json!({ "ready": true })
+    );
     assert_eq!(
         answer(tmp.path(), &["sign-in", "begin"], &device),
         json!({
